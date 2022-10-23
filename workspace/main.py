@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 import argparse
-from scv import SCV
+from scv import SCV as scv
 import cv2
 
 class StereoMatching:
     def __init__(self):
         #is opencv allowed
         self.isAllowed = False
-
+        self.save_path = ''
         self.left_img = None
         self.right_img = None
 
@@ -22,9 +22,13 @@ class StereoMatching:
         if self.isAllowed:
             self.right_image = cv2.imread(path)
 
+    def set_result_save_path(self, path):
+        self.save_path = path
+
 
     def run(self):
         pass
+    
 if __name__ == "__main__":
 
     #Argument parse
@@ -60,11 +64,11 @@ if __name__ == "__main__":
     #Load
     stereo = StereoMatching()
     if args.opencv == "y":
-        stereo.isAllowed(True)
+        stereo.allow_opencv(True)
         print('Using OpenCV')
 
     elif args.opencv == "n":
-        stereo.isAllowed(False)
+        stereo.allow_opencv(False)
         print('Using sh-song implementation')
     
     else:
