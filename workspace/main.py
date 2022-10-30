@@ -27,15 +27,16 @@ class StereoMatching:
     
 if __name__ == "__main__":
 
-    #Argument parse
+    #Set python argument parser
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--opencv', default='n')
     args = argparser.parse_args()
 
-    #Load
+    #Initialize
     cfg = Config()
     stereo = StereoMatching(cfg)
 
+    #Check if OpenCV allowed
     flag = True if (args.opencv == 'y') else False
     stereo.allow_opencv(flag)
 
