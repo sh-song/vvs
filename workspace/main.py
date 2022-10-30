@@ -6,6 +6,7 @@ from config import Config
 from libs.data_loader import DataLoader
 from libs.output_saver import OutputSaver
 from libs.midterm import VVS
+
 class StereoMatching:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -27,10 +28,8 @@ class StereoMatching:
         self.right_imgs = self.loader.right_images()
 
         #Undistort images
-        self.left_imgs = self.vvs.undistort_images(\
-                        self.cfg.K, self.cfg.dist, self.left_imgs)
-        self.right_imgs = self.vvs.undistort_images(\
-                        self.cfg.K, self.cfg.dist, self.right_imgs)
+        self.left_imgs = self.vvs.undistort_images(self.left_imgs)
+        self.right_imgs = self.vvs.undistort_images(self.right_imgs)
 
         # self.saver.save_images(self.right_imgs, 'right_undistorted')
     
