@@ -16,11 +16,17 @@ class DataLoader:
     def left_images(self):
         path = self.cfg.left_images
         imgs = self.load_images(path)
-        print(f"[Loader] Loaded left images in {path}")
+        if imgs[-1] is not None:
+            print(f"[Loader] Loaded left images in {path}")
+        else:
+            raise Exception(f"[Loader] Failed to load left images in {path}")
         return imgs
 
     def right_images(self):
         path = self.cfg.right_images
         imgs = self.load_images(path)
-        print(f"[Loader] Loaded right images in {path}")
+        if imgs[-1] is not None:
+            print(f"[Loader] Loaded right images in {path}")
+        else:
+            raise Exception(f"[Loader] Failed to load right images in {path}")
         return imgs       
