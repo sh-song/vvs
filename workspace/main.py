@@ -2,31 +2,44 @@
 import argparse
 from scv import SCV as scv
 import cv2
-
+import os
+from config import Config
 class StereoMatching:
-    def __init__(self):
+    def __init__(self, config):
         #is opencv allowed
         self.isAllowed = False
         self.save_path = ''
-        self.left_img = None
-        self.right_img = None
+        self.left_imgs = None
+        self.right_imgs = None
+        
 
     def allow_opencv(self, flag: bool):
         self.isAllowed = flag
 
-    def load_left_image(self, path):
-        if self.isAllowed:
-            self.left_image = cv2.imread(path)
+    def load_images(self, path):
+        filenames = os.listdir(path)
+        path += '/'
+        imgs = [None] * len(filenames)
+         
+        for i, filename in enumerate(filenames):
+            if self.isAllowed:
+                imgs[i] = cv2.imread(path + filename)
 
-    def load_right_image(self, path):
-        if self.isAllowed:
-            self.right_image = cv2.imread(path)
+        return imgs
+                
+    #TODO Seperate Loader in dataloader.py
+    def load_left_images(self, path):
+        self.left_images = self.load_images(path)
+        print(f"[Loader] Loaded left images in {path}")
+    def load_right_images(self, path):
+        self.right_images = self.load_images(path)
+        print(f"[Loader] Loaded right images in {path}")
 
     def set_result_save_path(self, path):
         self.save_path = path
 
-
     def run(self):
+        
         pass
     
 if __name__ == "__main__":
@@ -43,18 +56,18 @@ if __name__ == "__main__":
     )
 
     argparser.add_argument(
-        '--left_image',
+        '--left_images',
         default='',
         help='image path'
     )
 
     argparser.add_argument(
-        '--right_image',
+        '--right_images',
         default='',
         help='image path'
     )
     argparser.add_argument(
-        '--result_save',
+        '--save_path',
         default='',
         help='result save path'
     )
@@ -62,7 +75,8 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     #Load
-    stereo = StereoMatching()
+    cfg = Config()
+    stereo = StereoMatching(cfg)
     if args.opencv == "y":
         stereo.allow_opencv(True)
         print('Using OpenCV')
@@ -74,9 +88,10 @@ if __name__ == "__main__":
     else:
         print("[Error] Argument parsing failed")
 
-    stereo.load_left_image(args.left_image)
-    stereo.load_right_image(args.right_image)
-    stereo.set_result_save_path(args.result_save)
+    #TODO remove argparser and do the same on cfg
+    stereo.load_left_images(args.left_images)
+    stereo.load_right_images(args.right_images)
+    stereo.set_result_save_path(args.save_path)
 
     #Run
     stereo.run()
