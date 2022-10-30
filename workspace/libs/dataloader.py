@@ -6,11 +6,10 @@ class DataLoader:
 
     def load_images(self, path):
         filenames = os.listdir(path)
-        path += '/'
         imgs = [None] * len(filenames)
          
         for i, filename in enumerate(filenames):
-            imgs[i] = cv2.imread(path + filename)
+            imgs[i] = cv2.imread(f"{path}/{filename}")
         return imgs
 
     def left_images(self):
