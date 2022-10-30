@@ -10,9 +10,6 @@ class StereoMatching:
     def __init__(self, cfg):
         self.cfg = cfg
 
-        #is opencv allowed
-        self.isAllowed = False
-
         self.loader = DataLoader(cfg)
         self.saver = OutputSaver(cfg)
         self.vvs = VVS(cfg)
@@ -25,6 +22,7 @@ class StereoMatching:
         print(f"[Main] Allow OpenCV: {flag}")
 
     def run(self):
+        #Load data
         self.left_imgs = self.loader.left_images()
         self.right_imgs = self.loader.right_images()
 
