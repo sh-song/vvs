@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 import argparse
-from scv import SCV as scv
 import cv2
 import os
 from config import Config
-from libs.dataloader import DataLoader
+from libs.data_loader import DataLoader
 from libs.output_saver import OutputSaver
+from libs.midterm import VVS
 class StereoMatching:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -15,32 +15,26 @@ class StereoMatching:
 
         self.loader = DataLoader(cfg)
         self.saver = OutputSaver(cfg)
+        self.vvs = VVS(cfg)
 
         self.left_imgs = None
         self.right_imgs = None
         
     def allow_opencv(self, flag: bool):
-        self.isAllowed = flag
+        self.vvs.allow_opencv(flag)
         print(f"[Main] Allow OpenCV: {flag}")
 
     def run(self):
         self.left_imgs = self.loader.left_images()
         self.right_imgs = self.loader.right_images()
 
-        if self.isAllowed:
-        #Undistort TODO: make undistort_image module
-            K = self.cfg.K
-            dist = self.cfg.distortion
-            h,  w = self.left_imgs[0].shape[:2]
-            new_K, roi = cv2.getOptimalNewCameraMatrix(K, dist, (w,h), 1, (w,h))
-            x, y, w, h = roi
-            for i, img in enumerate(self.left_imgs):
-                self.left_imgs[i] = cv2.undistort(img, K, dist, None, new_K)[y:y+h, x:x+w]
-            for i, img in enumerate(self.right_imgs):
-                self.right_imgs[i] = cv2.undistort(img, K, dist, None, new_K)[y:y+h, x:x+w]
+        #Undistort images
+        self.left_imgs = self.vvs.undistort_images(\
+                        self.cfg.K, self.cfg.dist, self.left_imgs)
+        self.right_imgs = self.vvs.undistort_images(\
+                        self.cfg.K, self.cfg.dist, self.right_imgs)
 
-
-            self.saver.save_images(self.right_imgs, 'right_undistorted')
+        # self.saver.save_images(self.right_imgs, 'right_undistorted')
     
 if __name__ == "__main__":
 
