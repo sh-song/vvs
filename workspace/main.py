@@ -26,6 +26,21 @@ class StereoMatching:
     def run(self):
         self.left_imgs = self.loader.left_images()
         self.right_imgs = self.loader.right_images()
+
+        if self.isAllowed:
+        #Undistort TODO: make undistort_image module
+            K = self.cfg.K
+            dist = self.cfg.distortion
+            h,  w = self.left_imgs[0].shape[:2]
+            new_K, roi = cv2.getOptimalNewCameraMatrix(K, dist, (w,h), 1, (w,h))
+            x, y, w, h = roi
+            for i, img in enumerate(self.left_imgs):
+                self.left_imgs[i] = cv2.undistort(img, K, dist, None, new_K)[y:y+h, x:x+w]
+            for i, img in enumerate(self.right_imgs):
+                self.right_imgs[i] = cv2.undistort(img, K, dist, None, new_K)[y:y+h, x:x+w]
+
+
+            self.saver.save_images(self.right_imgs, 'right_undistorted')
     
 if __name__ == "__main__":
 
