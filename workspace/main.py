@@ -5,6 +5,7 @@ import cv2
 import os
 from config import Config
 from libs.dataloader import DataLoader
+from libs.output_saver import OutputSaver
 class StereoMatching:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -13,6 +14,7 @@ class StereoMatching:
         self.isAllowed = False
 
         self.loader = DataLoader(cfg)
+        self.saver = OutputSaver(cfg)
 
         self.left_imgs = None
         self.right_imgs = None
