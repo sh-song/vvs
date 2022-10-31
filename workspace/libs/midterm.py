@@ -45,3 +45,28 @@ class VVS:
                 feature_points[i] = img2
 
             return feature_points
+
+
+    def rectify_image(self, R, Rrect, left_imgs, right_imgs):
+        #TODO: calculate R1, R2 from R, Rrect
+        R1 = self.cfg.R_rect_left_color
+        R2 = self.cfg.R_rect_right_color
+        #######
+        h1, w1 = left_imgs[0].shape[:2]
+        h2, w2 = right_imgs[0].shape[:2]
+
+        length = len(left_imgs)
+        rect_left_imgs = [None] * length
+        rect_right_imgs = [None] * length
+        center = (w1/2, h1/2)
+        rotate_matrix = cv2.getRotationMatrix2D(center=center, angle=45, scale=1)
+        print(rotate_matrix.shape)
+        print('R1', R1.shape)
+ 
+        for i in range(length):
+            rect_left_imgs[i] = cv2.warpPerspective(src=left_imgs[i], M=R1, dsize=(w1, h1))
+            rect_right_imgs[i] = cv2.warpPerspective(src=right_imgs[i],M=R2,dsize=(w2, h2))
+            # rect_left_imgs[i] = R1@left_imgs[i]
+            # rect_right_imgs[i] = R2@right_imgs[i]
+
+        return rect_left_imgs, rect_right_imgs
