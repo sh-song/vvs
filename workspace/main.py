@@ -41,16 +41,14 @@ class StereoMatching:
 
 
 
-        self.saver.save_images(left_calib_imgs, 'left_calib_undistorted')
-        self.saver.save_images(right_calib_imgs, 'right_calib_undistorted')
-        exit(0)
-        # Load calibration data
-        left_calib_imgs = self.loader.left_calib_images()
-        right_calib_imgs = self.loader.right_calib_images()
+       # Feature Point Detection
 
-        # Feature Point Detection
         left_feature_points = self.vvs.detect_feature_points(left_calib_imgs)
         right_feature_points = self.vvs.detect_feature_points(right_calib_imgs)
+        self.saver.save_images(left_feature_points, 'left_calib_features')
+        # self.saver.save_images(right_calib_imgs, 'right_calib_undistorted')
+ 
+        exit(0)
 
         # Get Correspondence
         correspondents = self.vvs.get_correspondence_points(left_feature_points, right_feature_points)
