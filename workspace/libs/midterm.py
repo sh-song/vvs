@@ -9,8 +9,8 @@ class VVS:
         self.opencv = flag
 
     def undistort_images(self, K, dist, imgs):
-        K = K
-        dist = dist
+        # K = K
+        # dist = dist
 
         undistorted_imgs = [None] * len(imgs)
         if self.opencv:
