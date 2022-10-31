@@ -12,4 +12,7 @@ class Config:
 
     left_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_02/data'
     right_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_03/data'
+
+    left_calib_images = 'data/calib_2011_09_26_drive_0119/image_02/data'
+    right_calib_images = 'data/calib_2011_09_26_drive_0119/image_03/data'
     save_path = 'output'
