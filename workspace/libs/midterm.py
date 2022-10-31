@@ -8,9 +8,9 @@ class VVS:
     def allow_opencv(self, flag:bool):
         self.opencv = flag
 
-    def undistort_images(self, imgs):
-        K = self.cfg.K
-        dist = self.cfg.dist
+    def undistort_images(self, K, dist, imgs):
+        K = K
+        dist = dist
 
         undistorted_imgs = [None] * len(imgs)
         if self.opencv:

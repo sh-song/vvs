@@ -25,8 +25,13 @@ class StereoMatching:
         right_imgs = self.loader.right_images()
 
         # Undistort images
-        left_imgs = self.vvs.undistort_images(left_imgs)
-        right_imgs = self.vvs.undistort_images(right_imgs)
+        K1 = self.cfg.K_left_color
+        K2 = self.cfg.K_right_color
+        dist1 = self.cfg.dist_left_color
+        dist2 = self.cfg.dist_right_color
+
+        left_imgs = self.vvs.undistort_images(K1, dist1, left_imgs)
+        right_imgs = self.vvs.undistort_images(K2, dist2, right_imgs)
 
         # Load calibration data
         left_calib_imgs = self.loader.left_calib_images()
@@ -43,7 +48,7 @@ class StereoMatching:
         F = self.vvs.get_F_matrix(correspondents)
 
         # Get Essential Matrix
-        E = self.vvs.get_E_matrix(F, K)
+        E = self.vvs.get_E_matrix(F, self.cfg.K)
 
         # Get R, t between left/right cameras
         R, t = self.vvs.decomp_E_matrix(E) 
