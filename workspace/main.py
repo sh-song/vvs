@@ -21,18 +21,22 @@ class StereoMatching:
 
     def run(self):
         # Load data
-        left_imgs = self.loader.left_images()
-        right_imgs = self.loader.right_images()
+        left_imgs = self.loader.load_images(self.cfg.left_images)
+        right_imgs = self.loader.load_images(self.cfg.right_images)
 
         # Undistort images
         K1 = self.cfg.K_left_color
         K2 = self.cfg.K_right_color
         dist1 = self.cfg.dist_left_color
         dist2 = self.cfg.dist_right_color
-
+        print(K1.shape, K2.shape, dist1.shape, dist2.shape)
         left_imgs = self.vvs.undistort_images(K1, dist1, left_imgs)
         right_imgs = self.vvs.undistort_images(K2, dist2, right_imgs)
 
+
+        self.saver.save_images(left_imgs, 'left_undistorted')
+        self.saver.save_images(right_imgs, 'right_undistorted')
+        exit(0)
         # Load calibration data
         left_calib_imgs = self.loader.left_calib_images()
         right_calib_imgs = self.loader.right_calib_images()
@@ -63,7 +67,6 @@ class StereoMatching:
         disparity_map = self.vvs.get_disparity_map(left_imgs, right_imgs)
         
         # Save result        
-        # self.saver.save_images(self.right_imgs, 'right_undistorted')
     
 if __name__ == "__main__":
 

@@ -5,7 +5,7 @@ class DataLoader:
         self.cfg = cfg
 
     def sort_filenames(self, filenames):
-        #Init sorted lsit
+        #Init sorted list
         sorted = [(None, None)] * len(filenames) 
 
         #Extract frame number from filename
@@ -23,29 +23,24 @@ class DataLoader:
         return filenames
 
     def load_images(self, path):
+        # Get filenames
         filenames = os.listdir(path)
+
+        # Sort filenames
         filenames = self.sort_filenames(filenames)
+
+        # Init image list
         imgs = [None] * len(filenames)
          
+        # Read images into image list
         for i, filename in enumerate(filenames):
             imgs[i] = cv2.imread(f"{path}/{filename}")
             print(f"{path}/{filename}")
-        return imgs
 
-    def left_images(self):
-        path = self.cfg.left_images
-        imgs = self.load_images(path)
+        # Check images properly loaded
         if imgs[-1] is not None:
-            print(f"[Loader] Loaded left images in {path}")
+            print(f"[Loader] Loaded images in {path}")
         else:
-            raise Exception(f"[Loader] Failed to load left images in {path}")
-        return imgs
+            raise Exception(f"[Loader] Failed to load images in {path}")
 
-    def right_images(self):
-        path = self.cfg.right_images
-        imgs = self.load_images(path)
-        if imgs[-1] is not None:
-            print(f"[Loader] Loaded right images in {path}")
-        else:
-            raise Exception(f"[Loader] Failed to load right images in {path}")
-        return imgs       
+        return imgs
