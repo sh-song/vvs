@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import sys
 class VVS:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -39,14 +40,39 @@ class VVS:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = np.float32(img)
                 dst = cv2.cornerHarris(img, block_size, aperture_size, k)
-                #dst = cv2.dilate(dst, None)
-                print(img.shape)
-                img2[dst > epsilon*dst.max()] = [0,0,255]
-                feature_points[i] = img2
+                # dst = cv2.dilate(dst, None)
+
+                # feature_points[i] = np.array(np.where(dst > epsilon*dst.max())).T
+                feature_points[i] = np.array(np.where(dst > epsilon*dst.max()))
 
             return feature_points
 
 
+    def get_correspondence_points(self, left_feature_points, right_feature_points):
+        length = len(left_feature_points)
+        def get_correspondence_indices(P, Q):
+            """For each point in P find closest one in Q."""
+            p_size = P.shape[1]
+            q_size = Q.shape[1]
+            correspondences = []
+            for i in range(p_size):
+                p_point = P[:, i]
+                min_dist = sys.maxsize
+                chosen_idx = -1
+                for j in range(q_size):
+                    q_point = Q[:, j]
+                    dist = np.linalg.norm(q_point - p_point)
+                    if dist < min_dist:
+                        min_dist = dist
+                        chosen_idx = j
+                correspondences.append((i, chosen_idx))
+            return correspondences
+        for i in range(length):
+            left = left_feature_points[i]
+            right = right_feature_points[i]
+
+            corres = get_correspondence_indices(left, right)
+        return corres
     def rectify_image(self, R, Rrect, left_imgs, right_imgs):
         #TODO: calculate R1, R2 from R, Rrect
         R1 = self.cfg.R_rect_left_color

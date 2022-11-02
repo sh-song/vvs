@@ -46,9 +46,16 @@ class StereoMatching:
         left_feature_points = self.vvs.detect_feature_points(left_calib_imgs)
         right_feature_points = self.vvs.detect_feature_points(right_calib_imgs)
 
+        print(left_feature_points[0].shape)
+        print(right_feature_points[0].shape)
+        print('--------------')
+        # self.saver.save_images(left_imgs, 'left_rectified')
+        # self.saver.save_images(right_imgs, 'right_rectified')
+
 
         # Get Correspondence
-        # correspondents = self.vvs.get_correspondence_points(left_feature_points, right_feature_points)
+        correspondents = self.vvs.get_correspondence_points(left_feature_points, right_feature_points)
+        print(correspondents)
 
         # Get Fundamental Matrix
         # F = self.vvs.get_F_matrix(correspondents)
@@ -63,15 +70,11 @@ class StereoMatching:
         # Rrect = self.vvs.estimate_Rrect(t)
 
         # Rectify image
-        R = None
-        Rrect = None
-        left_imgs, right_imgs = self.vvs.rectify_image(R, Rrect, left_imgs, right_imgs)
-        self.saver.save_images(left_imgs, 'left_rectified')
-        self.saver.save_images(right_imgs, 'right_rectified')
-        exit(0)
-
+        # R = None
+        # Rrect = None
+        # left_imgs, right_imgs = self.vvs.rectify_image(R, Rrect, left_imgs, right_imgs)
         # Get disparity map (matching)
-        disparity_map = self.vvs.get_disparity_map(left_imgs, right_imgs)
+        # disparity_map = self.vvs.get_disparity_map(left_imgs, right_imgs)
         
         # Save result        
     
