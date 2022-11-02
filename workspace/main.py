@@ -6,7 +6,7 @@ from config import Config
 from libs.data_loader import DataLoader
 from libs.output_saver import OutputSaver
 from libs.midterm import VVS
-
+import numpy as np
 class StereoMatching:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -42,32 +42,46 @@ class StereoMatching:
 
 
        # Feature Point Detection
+        len_calib_imgs = len(left_calib_imgs)
+        left_feature_points_list = [None] * len_calib_imgs 
+        right_feature_points_list = [None] * len_calib_imgs 
 
-        left_feature_points = self.vvs.detect_feature_points(left_calib_imgs)
-        right_feature_points = self.vvs.detect_feature_points(right_calib_imgs)
+        for i in range(len_calib_imgs):
+            left_feature_points_list[i] = self.vvs.detect_feature_points(left_calib_imgs[i])
+            right_feature_points_list[i] = self.vvs.detect_feature_points(right_calib_imgs[i])
 
-        print(left_feature_points[0].shape)
-        print(right_feature_points[0].shape)
-        print('--------------')
         # self.saver.save_images(left_imgs, 'left_rectified')
         # self.saver.save_images(right_imgs, 'right_rectified')
 
 
         # Get Correspondence
-        correspondents = self.vvs.get_correspondence_points(left_feature_points, right_feature_points)
-        print(correspondents)
+        left_correspondence_points_list = [None] * len_calib_imgs
+        right_correspondence_points_list = [None] * len_calib_imgs
+        
+        for i in range(len_calib_imgs):
+            left_correspondence_points_list[i], right_correspondence_points_list[i] = \
+                self.vvs.get_correspondence_points(left_feature_points_list[i], \
+                                                    right_feature_points_list[i])
+
+        left_correspondence_points = np.concatenate(left_correspondence_points_list)
+        right_correspondence_points = np.concatenate(right_correspondence_points_list)
 
         # Get Fundamental Matrix
-        # F = self.vvs.get_F_matrix(correspondents)
-
+        F = self.vvs.get_F_matrix(left_correspondence_points, right_correspondence_points)
+        print("F: \n", F)
+        #TODO: rename variables
+        print('-----------')
         # Get Essential Matrix
-        # E = self.vvs.get_E_matrix(F, self.cfg.K)
+        E = self.vvs.get_E_matrix(F, self.cfg.K_left_color, self.cfg.K_right_color)
+        print("E: \n", E)
 
         # Get R, t between left/right cameras
-        # R, t = self.vvs.decomp_E_matrix(E) 
+        R, t = self.vvs.decomp_E_matrix(E) 
+        print("R, t: \n", R, t)
 
         # Estimate Rrect
-        # Rrect = self.vvs.estimate_Rrect(t)
+        Rrect = self.vvs.estimate_Rrect(t)
+        print("Rrect: \n", Rrect)
 
         # Rectify image
         # R = None
