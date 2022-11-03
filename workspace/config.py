@@ -10,8 +10,11 @@ class Config:
                             [0.000000e+00, 0.000000e+00, 1.000000e+00]])
     dist_right_color = np.array([-3.639558e-01, 1.788651e-01, 6.029694e-04, -3.922424e-04, -5.382460e-02])
 
-    left_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_02/data'
-    right_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_03/data'
+    #left_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_02/data'
+    #right_images = 'data/target_2011_09_26_drive_0048/unsync_unrect/image_03/data'
+    left_images = 'data/devel/target_2011_09_26_drive_0048/unsync_unrect/image_02/data'
+    right_images = 'data/devel/target_2011_09_26_drive_0048/unsync_unrect/image_03/data'
+
 
     left_calib_images = 'data/calib_2011_09_26_drive_0119/image_02/data'
     right_calib_images = 'data/calib_2011_09_26_drive_0119/image_03/data'

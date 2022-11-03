@@ -2,7 +2,9 @@ import numpy as np
 import numpy.linalg as npl
 import cv2
 import sys
+from PIL import Image
 class VVS:
+
     def __init__(self, cfg):
         self.cfg = cfg
         self.opencv = False
@@ -96,7 +98,6 @@ class VVS:
         t = - R.T @ t_tilde # R.T = npl.inv(R)
 
         return R, t
-        
 
     def estimate_Rrect(self, t):
         e1 = t / npl.norm(t)
@@ -108,28 +109,48 @@ class VVS:
         print('e1,e2,e3 shapes:', e1.shape, e2.shape, e3.shape)
         print('e1,e2,e3 :', e1, e2, e3)
         Rrect = np.array([e1, e2, e3])
+        print('det(Rrect): ', npl.det(Rrect))
         return Rrect
         
-    def rectify_image(self, R, Rrect, left_imgs, right_imgs):
-        #TODO: calculate R1, R2 from R, Rrect
-        R1 = self.cfg.R_rect_left_color
-        R2 = self.cfg.R_rect_right_color
-        #######
-        h1, w1 = left_imgs[0].shape[:2]
-        h2, w2 = right_imgs[0].shape[:2]
+    def backward_warping(self, R, K, img):
+        h, w = img.shape[:2]
+        rect_img = np.zeros((h, w, 3), dtype=np.uint8)
+        Warp = K @ npl.inv(R) @ npl.inv(K)
+        p = np.zeros(3).astype(int)
+        for i in range(h): #393
+            for j in range(w): #1312
+                p = Warp @ np.array([j, i, 1])
+                p = p.astype(int)
+                try: 
+                    # print(f'i:{i} j:{j} p[0]:{p[0]} p[1]:{p[1]}')
+                    rect_img[i, j, :] = img[p[1], p[0], :]
+                except IndexError as e:
+                    pass
+                    # print(e)
+        return rect_img
 
-        length = len(left_imgs)
-        rect_left_imgs = [None] * length
-        rect_right_imgs = [None] * length
-        center = (w1/2, h1/2)
-        rotate_matrix = cv2.getRotationMatrix2D(center=center, angle=45, scale=1)
-        print(rotate_matrix.shape)
-        print('R1', R1.shape)
- 
-        for i in range(length):
-            rect_left_imgs[i] = cv2.warpPerspective(src=left_imgs[i], M=R1, dsize=(w1, h1))
-            rect_right_imgs[i] = cv2.warpPerspective(src=right_imgs[i],M=R2,dsize=(w2, h2))
-            # rect_left_imgs[i] = R1@left_imgs[i]
-            # rect_right_imgs[i] = R2@right_imgs[i]
 
-        return rect_left_imgs, rect_right_imgs
+    def rectify_image(self, R, Rrect, K1, K2, left_img, right_img):
+        #Theory
+        # R1 = Rrect
+        # R2 = R @ Rrect
+
+        R1 = R
+        R2 = Rrect
+
+        left_rect_img = self.backward_warping(R1, K1, left_img)
+        right_rect_img = self.backward_warping(R2, K2, right_img)
+
+        # left_rect_img = scipy.misc.toimage(left_rect_img)
+        # right_rect_img = scipy.misc.toimage(right_rect_img)
+        # print(f"mapping: \n{left_map.shape}")
+
+        #         pixel = left_img[i, j]
+        #         x = np.array([i, j , 1])
+        #         x_prime = R1 @ x
+        #         x_prime = x_prime / x_prime[2]
+
+        #         print('xprimeshape ', x_prime)
+                # rotated[i, j] = 
+
+        return left_rect_img, right_rect_img
