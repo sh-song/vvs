@@ -30,39 +30,20 @@ class VVS:
 
 
     def detect_feature_points(self, img):
-        if self.opencv:
-            # Detector parameters
-            block_size = 2
-            aperture_size = 5
-            k = 0.2
 
-            k = 0.05
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #Shi-Tomasi
+        corners = cv2.goodFeaturesToTrack(img, 10000, 0.001, 10)
 
-            epsilon = 0.005
-
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            #Shi-Tomasi
-            corners = cv2.goodFeaturesToTrack(img, 10000, 0.001, 10)
-            print('----------------')
-            print(np.int0(corners[:, 0, :]))
-            
-            # img = np.float32(img)
-            # dst = cv2.cornerHarris(img, block_size, aperture_size, k)
-            # harris = np.array(np.where(dst > epsilon*dst.max())).T #shape: (n, 2)
-            # print('-sibal')
-            # print(harris)
-
-            print('----------------')
-             
-            for p in np.int0(corners):
-                x, y = p.ravel()
-                print(x, y)
-                cv2.circle(img, (x,y), 3, 255, -1 )
-            corners = corners[:, 0, :]
-            # corners[:, 0], corners[:, 1] = corners[:, 1].copy(), corners[:, 0].copy()
-            print(corners)
-           
-            return np.int0(corners), img
+        for p in np.int0(corners):
+            x, y = p.ravel()
+            print(x, y)
+            cv2.circle(img, (x,y), 3, 255, -1 )
+        corners = corners[:, 0, :]
+        corners[:, 0], corners[:, 1] = corners[:, 1].copy(), corners[:, 0].copy()
+        print(corners)
+        
+        return np.int0(corners), img
 
 
     def get_correspondence_points(self, left_points, right_points):
@@ -145,24 +126,6 @@ class VVS:
         R2 = - U @ W.T @ V.T
         R3 = - U @ W @ V.T
 
-        # tX1 = U @ W @ Sigma @ U.T
-        # tX2 = U @ W.T @ Sigma @ U.T
-        # print(f"tX:\n{tX}\ntX1:\n{tX1}\ntX2:\n{tX2}")
-        # R1 = U @ W.T @ V.T #W.T = npl.inv(W)
-        # R2 = U @ W @ V.T #W.T = npl.inv(W)
-
-        # t_tilde_x_1 = U @ W @ Sigma @ U.T
-        # t_tilde_1 = np.array([[t_tilde_x_1[2][1], t_tilde_x_1[0][2], t_tilde_x_1[1][0]]]).T
-
-        # t1_1 = - R1.T @ t_tilde_1 # R.T = npl.inv(R)
-        # t1_2 = - R2.T @ t_tilde_1 # R.T = npl.inv(R)
-
-        # t_tilde_x_2 = U @ W.T @ Sigma @ U.T
-        # t_tilde_2 = np.array([[t_tilde_x_2[2][1], t_tilde_x_2[0][2], t_tilde_x_2[1][0]]]).T
-        # print(f"tilde1: {t_tilde_x_1}\ntilde2: {t_tilde_x_2}")
-        # t2_1 = - R1.T @ t_tilde_2 # R.T = npl.inv(R)
-        # t2_2 = - R2.T @ t_tilde_2 # R.T = npl.inv(R)
-        # solutions = [(R1, t1_1), (R1, t2_1), (R2, t1_2), (R2, t2_2)]
         R_candidates = [R0, R1, R2, R3]
         for i, sol in enumerate(R_candidates):
             det = npl.det(sol)
@@ -173,7 +136,7 @@ class VVS:
             print(f"R: {sol}\n")
 
         print(f"E:\n{E}\ntX@R:{tX @ R1}\n")
-        return R0, t
+        return R1, t
 
     def estimate_Rrect(self, t): #TODO: CHECK CHECK CHECK
         e1 = t / npl.norm(t)
