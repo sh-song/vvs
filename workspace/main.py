@@ -46,10 +46,18 @@ class StereoMatching:
         left_feature_points_list = [None] * len_calib_imgs 
         right_feature_points_list = [None] * len_calib_imgs 
 
-        for i in range(len_calib_imgs):
-            left_feature_points_list[i] = self.vvs.detect_feature_points(left_calib_imgs[i])
-            right_feature_points_list[i] = self.vvs.detect_feature_points(right_calib_imgs[i])
+        left_feature_img_list = [None] * len_calib_imgs 
+        right_feature_img_list = [None] * len_calib_imgs 
 
+
+        for i in range(len_calib_imgs):
+            left_feature_points_list[i], left_feature_img_list[i] = self.vvs.detect_feature_points(left_calib_imgs[i])
+            right_feature_points_list[i], right_feature_img_list[i] = self.vvs.detect_feature_points(right_calib_imgs[i])
+
+        self.saver.save_images(left_feature_img_list, 'left_calib_features')
+        self.saver.save_images(right_feature_img_list, 'right_calib_features')
+
+       
 
         # Get Correspondence
         left_correspondence_points_list = [None] * len_calib_imgs
@@ -86,8 +94,8 @@ class StereoMatching:
         right_rect_imgs = [None] * len_imgs
         K1 = self.cfg.K_left_color
         K2 = self.cfg.K_right_color
-        R = self.cfg.R_rect_left_color
-        Rrect = self.cfg.R_rect_right_color
+        # R = self.cfg.R_rect_left_color
+        # Rrect = self.cfg.R_rect_right_color
         for i in range(len_imgs):
             left_rect_imgs[i], right_rect_imgs[i] = \
                 self.vvs.rectify_image(R, Rrect, K1, K2, left_imgs[i], right_imgs[i])

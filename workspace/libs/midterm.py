@@ -35,21 +35,41 @@ class VVS:
             block_size = 2
             aperture_size = 5
             k = 0.2
-            epsilon = 0.03
+
+            k = 0.05
+
+            epsilon = 0.005
 
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            img = np.float32(img)
-            dst = cv2.cornerHarris(img, block_size, aperture_size, k)
+            #Shi-Tomasi
+            corners = cv2.goodFeaturesToTrack(img, 10000, 0.001, 10)
+            print('----------------')
+            print(np.int0(corners[:, 0, :]))
+            
+            # img = np.float32(img)
+            # dst = cv2.cornerHarris(img, block_size, aperture_size, k)
+            # harris = np.array(np.where(dst > epsilon*dst.max())).T #shape: (n, 2)
+            # print('-sibal')
+            # print(harris)
 
-            return np.array(np.where(dst > epsilon*dst.max())).T #shape: (n, 2)
-
+            print('----------------')
+             
+            for p in np.int0(corners):
+                x, y = p.ravel()
+                print(x, y)
+                cv2.circle(img, (x,y), 3, 255, -1 )
+            corners = corners[:, 0, :]
+            # corners[:, 0], corners[:, 1] = corners[:, 1].copy(), corners[:, 0].copy()
+            print(corners)
+           
+            return np.int0(corners), img
 
 
     def get_correspondence_points(self, left_points, right_points):
         left_size = left_points.shape[0]
         right_size = right_points.shape[0]
 
-        if left_size < right_size:
+        if left_size <= right_size:
             P = left_points #reference
             Q = right_points
             ref_size = left_size
@@ -65,6 +85,7 @@ class VVS:
         for i in range(ref_size):
                 ref_point = P[i, :] #(x,y)
                 distances = npl.norm(Q - ref_point, axis=1)
+                
                 dist_min_point = Q[np.argmin(distances), :]
                 if isLeftRef:
                     left_correspondents[i, :] = np.array([ref_point], dtype=np.int16)
@@ -76,33 +97,87 @@ class VVS:
         return left_correspondents, right_correspondents
         
     def get_F_matrix(self, left_points, right_points):
-        F, _ = cv2.findFundamentalMat(left_points, right_points, cv2.FM_LMEDS)
+        # left_points[:, 0], left_points[:, 1] = left_points[:, 1].copy(), left_points[:, 0].copy()
+        # right_points[:, 0], right_points[:, 1] = right_points[:, 1].copy(), right_points[:, 0].copy()
+        F, _ = cv2.findFundamentalMat(left_points, right_points, cv2.USAC_ACCURATE)
         return F
 
+    
     def get_E_matrix(self, F, K1, K2):
+        
         return K2.T @ F @ K1
 
+    def get_cross_product_operator(self, n):
+        n_x = n[0]
+        n_y = n[1]
+        n_z = n[2]
+
+        return np.array([[0, -n_z, n_y],
+                        [n_z, 0, -n_x],
+                        [-n_y, n_x, 0]])
+
+    def decomp_cross_product_operator(self, nX):
+        n_x = nX[2, 1]
+        n_y = nX[0, 2]
+        n_z = nX[1, 0]
+        return np.array([n_x, n_y, n_z])
+        
     def decomp_E_matrix(self, E):
         U, Sigma, VT = npl.svd(E, full_matrices = True) 
         Sigma = np.diag(Sigma)
+        t = U[:, 2]
         V = VT.T
+        print('--------------')
+        print(f"U: \n{U}\nSigma:\n{Sigma}\nVT:\n{VT}\n")
+        print(f"t==U[:,2]:\n{t}\n")
+        print('--------------')
 
+        tX = self.get_cross_product_operator(t)
+
+        #W == Rz_(+90)
+        #W.T == Rz_(-90)
         W = np.array([[0, -1, 0],
                     [1, 0, 0], 
-                    [0, 0, 1]])
+                    [0, 0, 1]], dtype=np.float64)
+        
+        R0 = + U @ W.T @ V.T
+        R1 = + U @ W @ V.T
+        R2 = - U @ W.T @ V.T
+        R3 = - U @ W @ V.T
 
-        R = U @ W.T @ V.T #W.T = npl.inv(W)
+        # tX1 = U @ W @ Sigma @ U.T
+        # tX2 = U @ W.T @ Sigma @ U.T
+        # print(f"tX:\n{tX}\ntX1:\n{tX1}\ntX2:\n{tX2}")
+        # R1 = U @ W.T @ V.T #W.T = npl.inv(W)
+        # R2 = U @ W @ V.T #W.T = npl.inv(W)
 
-        t_tilde_x = U @ W @ Sigma @ U.T
-        t_tilde = np.array([[t_tilde_x[2][0], t_tilde_x[0][1], t_tilde_x[1][0]]]).T
-        t = - R.T @ t_tilde # R.T = npl.inv(R)
+        # t_tilde_x_1 = U @ W @ Sigma @ U.T
+        # t_tilde_1 = np.array([[t_tilde_x_1[2][1], t_tilde_x_1[0][2], t_tilde_x_1[1][0]]]).T
 
-        return R, t
+        # t1_1 = - R1.T @ t_tilde_1 # R.T = npl.inv(R)
+        # t1_2 = - R2.T @ t_tilde_1 # R.T = npl.inv(R)
 
-    def estimate_Rrect(self, t):
+        # t_tilde_x_2 = U @ W.T @ Sigma @ U.T
+        # t_tilde_2 = np.array([[t_tilde_x_2[2][1], t_tilde_x_2[0][2], t_tilde_x_2[1][0]]]).T
+        # print(f"tilde1: {t_tilde_x_1}\ntilde2: {t_tilde_x_2}")
+        # t2_1 = - R1.T @ t_tilde_2 # R.T = npl.inv(R)
+        # t2_2 = - R2.T @ t_tilde_2 # R.T = npl.inv(R)
+        # solutions = [(R1, t1_1), (R1, t2_1), (R2, t1_2), (R2, t2_2)]
+        R_candidates = [R0, R1, R2, R3]
+        for i, sol in enumerate(R_candidates):
+            det = npl.det(sol)
+            if not det > 0:
+                break
+            print('--------check R', i)
+            print(f"det(R): {det}")
+            print(f"R: {sol}\n")
+
+        print(f"E:\n{E}\ntX@R:{tX @ R1}\n")
+        return R0, t
+
+    def estimate_Rrect(self, t): #TODO: CHECK CHECK CHECK
         e1 = t / npl.norm(t)
-        e1 = e1.T[0] # shape: (3, )
-        e2 = np.array([-t[1][0], t[0][0], 0]) / npl.norm(t[:2])
+        e2 = np.array([-t[1], t[0], 0]) / npl.norm(t[:2])
         e3 = np.cross(e1, e2)
 
         print('e1,e2,e3 norms:', npl.norm(e1), npl.norm(e2), npl.norm(e3))
@@ -122,7 +197,6 @@ class VVS:
                 p = Warp @ np.array([j, i, 1])
                 p = p.astype(int)
                 try: 
-                    # print(f'i:{i} j:{j} p[0]:{p[0]} p[1]:{p[1]}')
                     rect_img[i, j, :] = img[p[1], p[0], :]
                 except IndexError as e:
                     pass
@@ -132,12 +206,11 @@ class VVS:
 
     def rectify_image(self, R, Rrect, K1, K2, left_img, right_img):
         #Theory
-        # R1 = Rrect
-        # R2 = R @ Rrect
+        R1 = Rrect
+        R2 = R @ Rrect
 
-        R1 = R
-        R2 = Rrect
-
+        # R1 = R
+        # R2 = R
         left_rect_img = self.backward_warping(R1, K1, left_img)
         right_rect_img = self.backward_warping(R2, K2, right_img)
 

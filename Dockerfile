@@ -31,9 +31,9 @@ RUN pip3 install \
 
 #CV
 RUN apt install -y \
-    libopencv-dev \
-    python3-opencv
+    libopencv-dev
 
+RUN pip3 install opencv-python==4.6.0.66
 #Directory
 RUN mkdir -p /workspace/output
 WORKDIR /workspace
