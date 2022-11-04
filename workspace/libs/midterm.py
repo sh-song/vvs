@@ -3,6 +3,7 @@ import numpy.linalg as npl
 import cv2
 import sys
 from PIL import Image
+from numpy.lib.stride_tricks import sliding_window_view
 class VVS:
 
     def __init__(self, cfg):
@@ -41,7 +42,6 @@ class VVS:
             cv2.circle(img, (x,y), 3, 255, -1 )
         corners = corners[:, 0, :]
         corners[:, 0], corners[:, 1] = corners[:, 1].copy(), corners[:, 0].copy()
-        print(corners)
         
         return np.int0(corners), img
 
@@ -78,14 +78,10 @@ class VVS:
         return left_correspondents, right_correspondents
         
     def get_F_matrix(self, left_points, right_points):
-        # left_points[:, 0], left_points[:, 1] = left_points[:, 1].copy(), left_points[:, 0].copy()
-        # right_points[:, 0], right_points[:, 1] = right_points[:, 1].copy(), right_points[:, 0].copy()
         F, _ = cv2.findFundamentalMat(left_points, right_points, cv2.USAC_ACCURATE)
         return F
-
     
     def get_E_matrix(self, F, K1, K2):
-        
         return K2.T @ F @ K1
 
     def get_cross_product_operator(self, n):
@@ -155,38 +151,95 @@ class VVS:
         rect_img = np.zeros((h, w, 3), dtype=np.uint8)
         Warp = K @ npl.inv(R) @ npl.inv(K)
         p = np.zeros(3).astype(int)
-        for i in range(h): #393
-            for j in range(w): #1312
-                p = Warp @ np.array([j, i, 1])
+
+        #######
+        # tensor_depth = h*w
+        # warp_tensor = np.repeat(Warp[:, :, np.newaxis], tensor_depth, axis=2)
+        # print('---------')
+        # # warp tensor shape: (3, 3, 515616)
+        # # warp tensor shape: (3, 3, 476532)
+
+        # pixel_xs = np.array([i for i in range(w)])
+        # pixel_ys = np.array([j for j in range(h)])
+
+        # img_tensor = np.ones((3, 1, tensor_depth))
+        # for i in range(w): #1312
+        #     img_tensor[0, 0, w:w+h] = np.ones((1, 1, h))*i
+        #     img_tensor[1, 0, w:w+h] = pixel_ys.copy()
+
+
+        # print(f"warp tensor result: {img_tensor.shape}")
+        
+        # result = warp_tensor @ img_tensor
+        
+            
+
+        ######
+        for i in range(w): #1312
+            for j in range(h): #393
+                p = Warp @ np.array([i, j, 1])
                 p = p.astype(int)
-                try: 
-                    rect_img[i, j, :] = img[p[1], p[0], :]
-                except IndexError as e:
-                    pass
-                    # print(e)
+                # check within boundary
+                if (0<= p[0] < w) and (0<= p[1] < h):
+                    rect_img[j, i, :] = img[p[1], p[0], :]
         return rect_img
 
 
     def rectify_image(self, R, Rrect, K1, K2, left_img, right_img):
-        #Theory
         R1 = Rrect
         R2 = R @ Rrect
 
-        # R1 = R
-        # R2 = R
         left_rect_img = self.backward_warping(R1, K1, left_img)
         right_rect_img = self.backward_warping(R2, K2, right_img)
-
-        # left_rect_img = scipy.misc.toimage(left_rect_img)
-        # right_rect_img = scipy.misc.toimage(right_rect_img)
-        # print(f"mapping: \n{left_map.shape}")
-
-        #         pixel = left_img[i, j]
-        #         x = np.array([i, j , 1])
-        #         x_prime = R1 @ x
-        #         x_prime = x_prime / x_prime[2]
-
-        #         print('xprimeshape ', x_prime)
-                # rotated[i, j] = 
-
         return left_rect_img, right_rect_img
+    
+
+    def get_disparity_map(self, F, left_img, right_img):
+        h, w = left_img.shape[:2]
+        disparity_map = np.zeros((h, w, 3), dtype=np.uint8)
+
+        epi_line = np.zeros(3).astype(int)
+        
+        print('-------------disparity')
+        f_half = 3 #filter half size
+        stride = 1
+        pad = 0
+
+        #TODO: backward-warping style.... from right to left. 
+        f_size = 5 
+        tensor_depth = right_img.shape[1]
+        target_tensor = np.zeros((f_size, f_size, 3, tensor_depth))
+
+        tensor_4d = np.zeros((f_size, f_size, 3, tensor_depth))
+        tensor_5d = np.zeros((f_size, f_size, 3, tensor_depth, tensor_depth))
+
+        filters_tensor_4d = tensor_4d.copy()            
+        target_tensor_4d = tensor_4d.copy()
+
+        filters_tensor_5d = tensor_5d.copy()            
+        target_tensor_5d = tensor_5d.copy()
+
+        disparity_map = np.zeros((h, w))
+        pixel_indexes = np.array(range(w))
+        for start_h in range(0, h - f_size - 1):
+
+            from_img = left_img[start_h:start_h + f_size, :, :]
+            to_img = right_img[start_h:start_h + f_size, :, :]
+
+            for i in range(tensor_depth - f_size):
+                filters_tensor_4d[:, :, :, i] = from_img[:, i : i + f_size, :]
+                target_tensor_4d[:, :, :, i] = to_img[:, i : i + f_size, :]
+
+            filters_tensor_5d = np.repeat(filters_tensor_4d[:, :, :,:, np.newaxis], tensor_depth, axis=4)
+            target_tensor_5d = np.repeat(target_tensor_4d[:, :, :,:, np.newaxis], tensor_depth, axis=4)
+
+            filters_tensor_5d = np.transpose(filters_tensor_5d, [0, 1, 2, 4, 3])
+            result = target_tensor_5d - filters_tensor_5d
+            result = np.abs(np.sum(result, axis=(0,1,2)))
+            result = np.argmin(result, axis=0)
+
+            disparity_map[start_h, :] = pixel_indexes - result
+
+        return disparity_map
+
+
